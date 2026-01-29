@@ -38,7 +38,7 @@ void dialogue() {
         };
     }
     else {
-		
+        startkey = VkKeyScanEx(question[0], GetKeyboardLayout(0));
     }
     cout << "Do you want the macro to toggle or hold ? (toggle / hold) : ";
     cin >> mode;
@@ -48,24 +48,20 @@ bool isKeyPressed() {
     return GetAsyncKeyState(startkey) & 0x8000;
 };
 
-void onPress() {
-    if (isKeyPressed()) {
-        lowerString(mode);
-        if (mode == "hold") {
-            MacroEnabled = true;
-        }
-        else if (mode == "toggle") {
+void keybindLogic() {
+	lowerString(mode);
+	if (mode == "hold") {
+        MacroEnabled = isKeyPressed();
+    }
+    else if (mode == "toggle") {
+        static bool lastKeyState = false;
+        bool currentKeyState = isKeyPressed();
+        if (currentKeyState && !lastKeyState) {
             MacroEnabled = !MacroEnabled;
         }
-    };
-};
-
-void onRelease() {
-    lowerString(mode);
-        if (mode == "hold" && !isKeyPressed()) {
-            MacroEnabled = false;
+        lastKeyState = currentKeyState;
     }
-}
+};
 
 void scrollup() {
     INPUT input = { 0 };
@@ -116,8 +112,21 @@ int main()
 {
     dialogue();
 
+    static bool lastKeyState = false;
+	lowerString(mode);
+
     while (true) {
-        if (isKeyPressed()) {
+        bool currentKeyState = isKeyPressed();
+        if (mode == "hold") {
+            MacroEnabled = currentKeyState;
+        }
+        else if (mode == "toggle") {
+            if (currentKeyState && !lastKeyState) {
+                MacroEnabled = !MacroEnabled;
+            }
+            lastKeyState = currentKeyState;
+        }
+        if (MacroEnabled) {
             timeBeginPeriod(1);
             macroLogic();
             timeEndPeriod(1);
